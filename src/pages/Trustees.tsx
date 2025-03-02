@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Pencil, Trash2, Download, X, Plus, Check, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-interface Nominee {
+interface Trustee {
   id: string;
   name: string;
   email: string;
@@ -11,6 +11,7 @@ interface Nominee {
   photo_url: string;
   categories: string[];
   government_id_url: string;
+  approval_type: string;
 }
 
 interface SuccessMessageProps {
@@ -70,26 +71,27 @@ function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
   );
 }
 
-interface NomineeFormProps {
+interface TrusteeFormProps {
   onClose: () => void;
   onSuccess: (message: string) => void;
-  nominee?: Nominee;
+  trustee?: Trustee;
   isView?: boolean;
 }
 
-function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) {
+function TrusteeForm({ onClose, onSuccess, trustee, isView }: TrusteeFormProps) {
   const [formData, setFormData] = useState({
-    name: nominee?.name || '',
-    email: nominee?.email || '',
-    phone: nominee?.phone || '',
-    relationship: nominee?.relationship || '',
-    categories: nominee?.categories || [],
-    photo_url: nominee?.photo_url || '',
-    government_id_url: nominee?.government_id_url || '',
+    name: trustee?.name || '',
+    email: trustee?.email || '',
+    phone: trustee?.phone || '',
+    relationship: trustee?.relationship || '',
+    categories: trustee?.categories || [],
+    photo_url: trustee?.photo_url || '',
+    government_id_url: trustee?.government_id_url || '',
+    approval_type: trustee?.approval_type || 'Group Request',
   });
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(nominee?.photo_url || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(trustee?.photo_url || null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const govIdInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,28 +106,28 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
         throw new Error('User not authenticated');
       }
 
-      const nomineeData = {
+      const trusteeData = {
         ...formData,
         user_id: user.id,
       };
 
-      if (nominee) {
-        // Update existing nominee
+      if (trustee) {
+        // Update existing trustee
         const { error } = await supabase
-          .from('nominees')
-          .update(nomineeData)
-          .eq('id', nominee.id);
+          .from('trustees')
+          .update(trusteeData)
+          .eq('id', trustee.id);
           
         if (error) throw error;
         onSuccess('Changes Added Successfully');
       } else {
-        // Add new nominee
+        // Add new trustee
         const { error } = await supabase
-          .from('nominees')
-          .insert([nomineeData]);
+          .from('trustees')
+          .insert([trusteeData]);
           
         if (error) throw error;
-        onSuccess('Nominee added Successfully');
+        onSuccess('Trustee added Successfully');
       }
       
       onClose();
@@ -147,7 +149,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `nominees/${fileName}`;
+      const filePath = `trustees/${fileName}`;
       
       // Create a URL for preview
       const objectUrl = URL.createObjectURL(file);
@@ -224,7 +226,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
-            {isView ? 'View Nominee' : nominee ? 'Edit Nominee' : 'Add Nominee'}
+            {isView ? 'View Trustee' : trustee ? 'Edit Trustee' : 'Add Trustee'}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
             <X className="h-5 w-5" />
@@ -241,7 +243,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Nominee Name
+                Trustee Name
               </label>
               <input
                 type="text"
@@ -255,7 +257,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Email Address
+                Email Id
               </label>
               <input
                 type="email"
@@ -289,7 +291,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Phone number
+                Phone No
               </label>
               <input
                 type="tel"
@@ -304,7 +306,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Access to Categories
+              Access to Category
             </label>
             <div className="flex flex-wrap gap-2">
               {categoryOptions.map((category) => (
@@ -408,6 +410,61 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
             </div>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Approval Type
+            </label>
+            <div className="mt-1">
+              <div className="text-xs text-gray-500 mb-2">
+                This section outlines the individual request approval process. Access to specific user information can be granted to all the nominees of the user even if only one or some of the nominees requests for access.
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <input
+                    id="group-request"
+                    name="approval-type"
+                    type="radio"
+                    checked={formData.approval_type === 'Group Request'}
+                    onChange={() => setFormData({ ...formData, approval_type: 'Group Request' })}
+                    disabled={isView}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                  />
+                  <label htmlFor="group-request" className="ml-3 block text-sm font-medium text-gray-700">
+                    Group Request
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="individual-request"
+                    name="approval-type"
+                    type="radio"
+                    checked={formData.approval_type === 'Individual Request'}
+                    onChange={() => setFormData({ ...formData, approval_type: 'Individual Request' })}
+                    disabled={isView}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                  />
+                  <label htmlFor="individual-request" className="ml-3 block text-sm font-medium text-gray-700">
+                    Individual Request
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="without-request"
+                    name="approval-type"
+                    type="radio"
+                    checked={formData.approval_type === 'Without Request'}
+                    onChange={() => setFormData({ ...formData, approval_type: 'Without Request' })}
+                    disabled={isView}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                  />
+                  <label htmlFor="without-request" className="ml-3 block text-sm font-medium text-gray-700">
+                    Without Request
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end space-x-3">
             <button
               type="button"
@@ -422,7 +479,7 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
                 disabled={uploading}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {uploading ? 'Uploading...' : nominee ? 'Save Changes' : 'Submit'}
+                {uploading ? 'Uploading...' : trustee ? 'Save Changes' : 'Submit'}
               </button>
             )}
           </div>
@@ -432,62 +489,62 @@ function NomineeForm({ onClose, onSuccess, nominee, isView }: NomineeFormProps) 
   );
 }
 
-export function Nominees() {
+export function Trustees() {
   const [showForm, setShowForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState<string | null>(null);
-  const [selectedNominee, setSelectedNominee] = useState<Nominee | null>(null);
+  const [selectedTrustee, setSelectedTrustee] = useState<Trustee | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
-  const [nominees, setNominees] = useState<Nominee[]>([]);
+  const [trustees, setTrustees] = useState<Trustee[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchNominees();
+    fetchTrustees();
   }, []);
 
-  const fetchNominees = async () => {
+  const fetchTrustees = async () => {
     try {
       const { data, error } = await supabase
-        .from('nominees')
+        .from('trustees')
         .select('*');
 
       if (error) throw error;
-      setNominees(data || []);
+      setTrustees(data || []);
     } catch (error) {
-      console.error('Error fetching nominees:', error);
+      console.error('Error fetching trustees:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteNominee = async (id: string) => {
+  const handleDeleteTrustee = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('nominees')
+        .from('trustees')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
       
-      setNominees(nominees.filter(nominee => nominee.id !== id));
-      setShowSuccess('Nominee deleted successfully');
+      setTrustees(trustees.filter(trustee => trustee.id !== id));
+      setShowSuccess('Trustee deleted successfully');
       setConfirmDelete(null);
     } catch (error) {
-      console.error('Error deleting nominee:', error);
+      console.error('Error deleting trustee:', error);
     }
   };
 
-  const filteredNominees = nominees.filter(nominee => 
-    nominee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    nominee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    nominee.relationship.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTrustees = trustees.filter(trustee => 
+    trustee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trustee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trustee.relationship.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading nominees...</div>
+        <div className="text-gray-500">Loading trustees...</div>
       </div>
     );
   }
@@ -497,26 +554,26 @@ export function Nominees() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Nominees ({nominees.length})
+            Trustees ({trustees.length})
           </h2>
           <div className="mt-1 flex items-center space-x-1">
             <span className="text-sm text-gray-500">Dashboard</span>
             <span className="text-sm text-gray-500">/</span>
-            <span className="text-sm text-gray-700">Nominees</span>
+            <span className="text-sm text-gray-700">Trustees</span>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
           <button
             onClick={() => {
-              setSelectedNominee(null);
+              setSelectedTrustee(null);
               setIsViewMode(false);
               setShowForm(true);
             }}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Nominee
+            Add Trustee
           </button>
           <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
             <Download className="h-4 w-4 mr-2" />
@@ -537,43 +594,43 @@ export function Nominees() {
         </div>
       </div>
 
-      {nominees.length === 0 ? (
+      {trustees.length === 0 ? (
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900">No nominees yet</h3>
+          <h3 className="text-lg font-medium text-gray-900">No trustees yet</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get started by adding your first nominee.
+            Get started by adding your first trustee.
           </p>
         </div>
-      ) : filteredNominees.length === 0 ? (
+      ) : filteredTrustees.length === 0 ? (
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900">No matching nominees</h3>
+          <h3 className="text-lg font-medium text-gray-900">No matching trustees</h3>
           <p className="mt-1 text-sm text-gray-500">
             Try adjusting your search criteria.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredNominees.map((nominee) => (
+          {filteredTrustees.map((trustee) => (
             <div
-              key={nominee.id}
+              key={trustee.id}
               className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex justify-end space-x-2 mb-4">
                 <button
                   onClick={() => {
-                    setSelectedNominee(nominee);
+                    setSelectedTrustee(trustee);
                     setIsViewMode(false);
                     setShowForm(true);
                   }}
                   className="p-1 text-gray-400 hover:text-gray-500"
-                  title="Edit nominee"
+                  title="Edit trustee"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setConfirmDelete(nominee.id)}
+                  onClick={() => setConfirmDelete(trustee.id)}
                   className="p-1 text-gray-400 hover:text-gray-500"
-                  title="Delete nominee"
+                  title="Delete trustee"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -581,28 +638,31 @@ export function Nominees() {
 
               <div className="flex items-center space-x-4">
                 <img
-                  src={nominee.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(nominee.name)}&background=random`}
-                  alt={nominee.name}
+                  src={trustee.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(trustee.name)}&background=random`}
+                  alt={trustee.name}
                   className="h-16 w-16 rounded-full object-cover"
                 />
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">
-                    {nominee.name}
+                    {trustee.name}
                   </h3>
-                  <p className="text-sm text-gray-500">{nominee.relationship}</p>
+                  <p className="text-sm text-gray-500">{trustee.relationship}</p>
                 </div>
               </div>
 
               <div className="mt-4 space-y-2">
                 <div className="flex items-center text-sm text-gray-500">
-                  <span className="truncate">{nominee.email}</span>
+                  <span className="truncate">{trustee.email}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
-                  <span>{nominee.phone}</span>
+                  <span>{trustee.phone}</span>
                 </div>
-                {nominee.categories && nominee.categories.length > 0 && (
+                <div className="flex items-center text-sm text-gray-500">
+                  <span>Approval: {trustee.approval_type}</span>
+                </div>
+                {trustee.categories && trustee.categories.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {nominee.categories.map((category) => (
+                    {trustee.categories.map((category) => (
                       <span 
                         key={category} 
                         className="px-2 py-1 bg-gray-100 text-xs rounded-full text-gray-600"
@@ -619,15 +679,15 @@ export function Nominees() {
       )}
 
       {showForm && (
-        <NomineeForm
+        <TrusteeForm
           onClose={() => {
             setShowForm(false);
-            setSelectedNominee(null);
+            setSelectedTrustee(null);
             setIsViewMode(false);
-            fetchNominees(); // Refresh the list after form submission
+            fetchTrustees(); // Refresh the list after form submission
           }}
           onSuccess={setShowSuccess}
-          nominee={selectedNominee || undefined}
+          trustee={selectedTrustee || undefined}
           isView={isViewMode}
         />
       )}
@@ -641,8 +701,8 @@ export function Nominees() {
 
       {confirmDelete && (
         <ConfirmDialog
-          message="Are you sure you want to delete this nominee? This action cannot be undone."
-          onConfirm={() => handleDeleteNominee(confirmDelete)}
+          message="Are you sure you want to delete this trustee? This action cannot be undone."
+          onConfirm={() => handleDeleteTrustee(confirmDelete)}
           onCancel={() => setConfirmDelete(null)}
         />
       )}

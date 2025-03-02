@@ -58,6 +58,12 @@ export function Sidebar() {
         <SidebarLink to="/dashboard" icon={<LayoutDashboard size={20} />}>
           Dashboard
         </SidebarLink>
+        <SidebarLink to="/nominees" icon={<Users size={20} />}>
+          Nominees
+        </SidebarLink>
+        <SidebarLink to="/trustees" icon={<Shield size={20} />}>
+          Trustees
+        </SidebarLink>
         <SidebarLink to="/transactions" icon={<Receipt size={20} />}>
           Transactions
         </SidebarLink>

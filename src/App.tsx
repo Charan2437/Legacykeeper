@@ -4,6 +4,7 @@ import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 import { Dashboard } from './pages/Dashboard';
 import { Nominees } from './pages/Nominees';
+import { Trustees } from './pages/Trustees';
 import { DashboardLayout } from './components/DashboardLayout';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<DashboardLayout />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="nominees" element={<Nominees />} />
+          <Route path="trustees" element={<Trustees />} />
         </Route>
       </Routes>
     </BrowserRouter>
